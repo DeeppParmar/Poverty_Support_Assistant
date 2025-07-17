@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poverty Support Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #3E5282 0%, #6C81C0 35%, #84A5E3 65%, #8B83C6 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 40%, rgba(181, 165, 215, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(132, 165, 227, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 28px;
+            box-shadow: 0 30px 60px rgba(62, 82, 130, 0.25), 
+                        0 10px 30px rgba(108, 129, 192, 0.15);
+            width: 100%;
+            max-width: 900px;
+            height: 85vh;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #3E5282 0%, #6C81C0 50%, #84A5E3 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(62, 82, 130, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+            animation: shimmer 4s infinite;
+        }
+
+        .chat-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .chat-header h1 {
+                margin-top: 20px;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+            font-weight: 400;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 2;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .header-controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .header-button {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .header-button:active {
+            transform: translateY(0);
+        }
+
+        .connection-status.connected {
+            background: rgba(181, 165, 215, 0.3);
+            border: 2px solid rgba(181, 165, 215, 0.5);
+            color: #B5A5D7;
+            box-shadow: 0 4px 15px rgba(181, 165, 215, 0.2);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid rgba(244, 67, 54, 0.5);
+            color: #ff4444;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.2);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: linear-gradient(to bottom, 
+                rgba(248, 249, 250, 0.9) 0%, 
+                rgba(233, 236, 239, 0.8) 100%);
+            position: relative;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(62, 82, 130, 0.1);
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #6C81C0, #84A5E3);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #3E5282, #6C81C0);
+        }
+
+        .message {
+            margin-bottom: 25px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.assistant {
+            text-align: left;
+        }
+
+        .message.error {
+            text-align: center;
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 18px 24px;
+            border-radius: 24px;
+            max-width: 75%;
+            line-height: 1.6;
+            word-wrap: break-word;
+            font-size: 1.02rem;
+            position: relative;
+            white-space: pre-wrap;
+            transition: all 0.3s ease;
+        }
+
+        .message-content:hover {
+            transform: translateY(-2px);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #3E5282 0%, #6C81C0 100%);
+            color: white;
+            box-shadow: 0 6px 20px rgba(62, 82, 130, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .message.assistant .message-content {
+            background: rgba(255, 255, 255, 0.95);
+            color: #3E5282;
+            border: 2px solid rgba(132, 165, 227, 0.3);
+            box-shadow: 0 5px 20px rgba(132, 165, 227, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .message.error .message-content {
+            background: rgba(255, 235, 238, 0.95);
+            color: #c62828;
+            border: 2px solid rgba(255, 205, 210, 0.5);
+            box-shadow: 0 5px 20px rgba(198, 40, 40, 0.15);
+        }
+
+        .chat-input-container {
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 2px solid rgba(132, 165, 227, 0.2);
+            box-shadow: 0 -8px 25px rgba(62, 82, 130, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-input-form {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 18px 24px;
+            border: 2px solid rgba(132, 165, 227, 0.3);
+            border-radius: 30px;
+            font-size: 1.05rem;
+            outline: none;
+            transition: all 0.3s ease;
+            background: rgba(248, 249, 250, 0.8);
+            color: #3E5282;
+            backdrop-filter: blur(5px);
+        }
+
+        .chat-input:focus {
+            border-color: #6C81C0;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 0 4px rgba(108, 129, 192, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .chat-input::placeholder {
+            color: rgba(62, 82, 130, 0.6);
+        }
+
+        .send-button {
+            padding: 18px 32px;
+            background: linear-gradient(135deg, #6C81C0 0%, #84A5E3 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(108, 129, 192, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .send-button:hover {
+            background: linear-gradient(135deg, #3E5282 0%, #6C81C0 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(62, 82, 130, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(-1px);
+        }
+
+        .send-button:disabled {
+            background: linear-gradient(135deg, #ccc, #ddd);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            border-color: transparent;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            margin-bottom: 25px;
+            border: 2px solid rgba(132, 165, 227, 0.3);
+            max-width: 75%;
+            box-shadow: 0 5px 20px rgba(132, 165, 227, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(135deg, #6C81C0, #84A5E3);
+            border-radius: 50%;
+            animation: typing 1.6s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 60px 30px;
+            color: #3E5282;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            margin: 25px 0;
+            box-shadow: 0 8px 25px rgba(132, 165, 227, 0.15);
+            border: 2px solid rgba(181, 165, 215, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .welcome-message h2 {
+            background: linear-gradient(135deg, #3E5282, #6C81C0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .welcome-message p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: #6C81C0;
+        }
+
+        .quick-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .suggestion-chip {
+            background: linear-gradient(135deg, rgba(132, 165, 227, 0.15), rgba(181, 165, 215, 0.15));
+            color: #3E5282;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(108, 129, 192, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .suggestion-chip:hover {
+            background: linear-gradient(135deg, #6C81C0, #84A5E3);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(108, 129, 192, 0.4);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .suggestion-chip:active {
+            transform: translateY(-1px);
+        }
+
+        .debug-info {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: rgba(62, 82, 130, 0.95);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            max-width: 350px;
+            z-index: 1000;
+            display: none;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(62, 82, 130, 0.3);
+        }
+
+        .history-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .history-modal.active {
+            display: flex;
+        }
+
+        .history-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid rgba(132, 165, 227, 0.3);
+            box-shadow: 0 20px 50px rgba(62, 82, 130, 0.3);
+            backdrop-filter: blur(20px);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(132, 165, 227, 0.2);
+        }
+
+        .history-header h3 {
+            color: #3E5282;
+            font-size: 1.4rem;
+            margin: 0;
+        }
+
+        .close-history {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6C81C0;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-history:hover {
+            background: rgba(108, 129, 192, 0.1);
+            transform: scale(1.1);
+        }
+
+        .history-session {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(132, 165, 227, 0.2);
+        }
+
+        .history-session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .history-session-time {
+            font-size: 0.9rem;
+            color: #6C81C0;
+            font-weight: 500;
+        }
+
+        .load-session-btn {
+            padding: 5px 12px;
+            background: linear-gradient(135deg, #6C81C0, #84A5E3);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .load-session-btn:hover {
+            background: linear-gradient(135deg, #3E5282, #6C81C0);
+            transform: translateY(-1px);
+        }
+
+        .history-preview {
+            font-size: 0.9rem;
+            color: #3E5282;
+            line-height: 1.4;
+        }
+
+        .reset-confirmation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .reset-confirmation.active {
+            display: flex;
+        }
+
+        .reset-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            border: 2px solid rgba(132, 165, 227, 0.3);
+            box-shadow: 0 20px 50px rgba(62, 82, 130, 0.3);
+            backdrop-filter: blur(20px);
+        }
+
+        .reset-content h3 {
+            color: #3E5282;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .reset-content p {
+            color: #6C81C0;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .reset-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .reset-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn.confirm {
+            background: linear-gradient(135deg, #ff6b6b, #ff5252);
+            color: white;
+        }
+
+        .reset-btn.confirm:hover {
+            background: linear-gradient(135deg, #ff5252, #f44336);
+            transform: translateY(-2px);
+        }
+
+        .reset-btn.cancel {
+            background: linear-gradient(135deg, #6C81C0, #84A5E3);
+            color: white;
+        }
+
+        .reset-btn.cancel:hover {
+            background: linear-gradient(135deg, #3E5282, #6C81C0);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 600px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+
+            .chat-header h1 {
+                font-size: 1.6rem;
+            }
+
+            .chat-header p {
+                font-size: 1rem;
+            }
+
+            .chat-messages {
+                padding: 25px;
+            }
+
+            .chat-input-container {
+                padding: 25px;
+            }
+
+            .quick-suggestions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .suggestion-chip {
+                width: 100%;
+                text-align: center;
+                max-width: 250px;
+            }
+
+            .welcome-message {
+                padding: 50px 25px;
+            }
+
+            .welcome-message h2 {
+                font-size: 1.6rem;
+            }
+
+            .welcome-message p {
+                font-size: 1.05rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-info" id="debugInfo"></div>
+    
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="connection-status" id="connectionStatus">Checking...</div>
+            <div class="header-controls">
+                <button class="header-button" id="historyButton" title="Chat History">Chat History&nbsp;&nbsp;  
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3h18v18H3z"/>
+                        <path d="M8 7h8"/>
+                        <path d="M8 11h8"/>
+                        <path d="M8 15h5"/>
+                    </svg>
+                </button>
+                <button class="header-button" id="resetButton" title="Reset Chat"> Reset&nbsp;&nbsp;
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 4v6h6"/>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                </button>
+            </div>
+
+    <!-- History Modal -->
+    <div class="history-modal" id="historyModal">
+        <div class="history-content">
+            <div class="history-header">
+                <h3>Chat History</h3>
+                <button class="close-history" id="closeHistory">&times;</button>
+            </div>
+            <div id="historyList">
+                <p style="text-align: center; color: #6C81C0; font-style: italic;">No chat history available</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div class="reset-confirmation" id="resetConfirmation">
+        <div class="reset-content">
+            <h3>Reset Chat</h3>
+            <p>Are you sure you want to clear the current conversation? This action cannot be undone.</p>
+            <div class="reset-buttons">
+                <button class="reset-btn cancel" id="cancelReset">Cancel</button>
+                <button class="reset-btn confirm" id="confirmReset">Reset Chat</button>
+            </div>
+        </div>
+    </div>
+            <h1>🤝 Poverty Support Assistant</h1>
+            <p>Your guide to welfare, employment, food assistance, healthcare & financial support</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h2>Welcome! I'm here to help you find support.</h2>
+                <p>Ask me about welfare programs, job opportunities, food assistance, healthcare resources, or financial support. I'm here to guide you to the help you need.</p>
+                <div class="quick-suggestions">
+                    <div class="suggestion-chip" onclick="sendQuickMessage('How can I apply for food stamps?')">Food Assistance</div>
+                    <div class="suggestion-chip" onclick="sendQuickMessage('I need help finding a job')">Job Search</div>
+                    <div class="suggestion-chip" onclick="sendQuickMessage('What healthcare programs are available?')">Healthcare</div>
+                    <div class="suggestion-chip" onclick="sendQuickMessage('I need emergency financial help')">Emergency Aid</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <form class="chat-input-form" id="chatForm">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Ask about welfare, jobs, food aid, healthcare, or financial support..."
+                    required
+                >
+                <button type="submit" class="send-button" id="sendButton">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const chatForm = document.getElementById('chatForm');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const debugInfo = document.getElementById('debugInfo');
+        const historyButton = document.getElementById('historyButton');
+        const resetButton = document.getElementById('resetButton');
+        const historyModal = document.getElementById('historyModal');
+        const closeHistory = document.getElementById('closeHistory');
+        const historyList = document.getElementById('historyList');
+        const resetConfirmation = document.getElementById('resetConfirmation');
+        const cancelReset = document.getElementById('cancelReset');
+        const confirmReset = document.getElementById('confirmReset');
+
+        let isDebugMode = false;
+        let currentChatHistory = [];
+        let storedChatSessions = [];
+
+        // Chat history management
+        function saveChatHistory() {
+            if (currentChatHistory.length > 0) {
+                const sessionData = {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    messages: [...currentChatHistory],
+                    preview: currentChatHistory[0]?.content?.substring(0, 100) + '...' || 'New conversation'
+                };
+                storedChatSessions.unshift(sessionData);
+                // Keep only last 10 sessions
+                if (storedChatSessions.length > 10) {
+                    storedChatSessions = storedChatSessions.slice(0, 10);
+                }
+                updateDebugInfo(`Chat history saved. Sessions: ${storedChatSessions.length}`);
+            }
+        }
+
+        function loadChatHistory(sessionId) {
+            const session = storedChatSessions.find(s => s.id === sessionId);
+            if (session) {
+                clearChat();
+                currentChatHistory = [...session.messages];
+                
+                // Replay messages
+                session.messages.forEach(msg => {
+                    addMessageToUI(msg.content, msg.type);
+                });
+                
+                closeHistoryModal();
+                updateDebugInfo(`Loaded chat session: ${sessionId}`);
+            }
+        }
+
+        function displayChatHistory() {
+            if (storedChatSessions.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; color: #6C81C0; font-style: italic;">No chat history available</p>';
+                return;
+            }
+
+            const historyHTML = storedChatSessions.map(session => {
+                const date = new Date(session.timestamp);
+                const timeStr = date.toLocaleString();
+                return `
+                    <div class="history-session">
+                        <div class="history-session-header">
+                            <div class="history-session-time">${timeStr}</div>
+                            <button class="load-session-btn" onclick="loadChatHistory(${session.id})">Load</button>
+                        </div>
+                        <div class="history-preview">${session.preview}</div>
+                    </div>
+                `;
+            }).join('');
+
+            historyList.innerHTML = historyHTML;
+        }
+
+        function clearChat() {
+            // Save current session before clearing
+            if (currentChatHistory.length > 0) {
+                saveChatHistory();
+            }
+            
+            // Clear current chat
+            currentChatHistory = [];
+            
+            // Clear UI
+            chatMessages.innerHTML = `
+                <div class="welcome-message">
+                    <h2>Welcome! I'm here to help you find support.</h2>
+                    <p>Ask me about welfare programs, job opportunities, food assistance, healthcare resources, or financial support. I'm here to guide you to the help you need.</p>
+                    <div class="quick-suggestions">
+                        <div class="suggestion-chip" onclick="sendQuickMessage('How can I apply for food stamps?')">Food Assistance</div>
+                        <div class="suggestion-chip" onclick="sendQuickMessage('I need help finding a job')">Job Search</div>
+                        <div class="suggestion-chip" onclick="sendQuickMessage('What healthcare programs are available?')">Healthcare</div>
+                        <div class="suggestion-chip" onclick="sendQuickMessage('I need emergency financial help')">Emergency Aid</div>
+                    </div>
+                </div>
+            `;
+            
+            updateDebugInfo('Chat cleared and reset');
+        }
+
+        // Modal functions
+        function openHistoryModal() {
+            displayChatHistory();
+            historyModal.classList.add('active');
+        }
+
+        function closeHistoryModal() {
+            historyModal.classList.remove('active');
+        }
+
+        function openResetConfirmation() {
+            resetConfirmation.classList.add('active');
+        }
+
+        function closeResetConfirmation() {
+            resetConfirmation.classList.remove('active');
+        }
+
+        // Event listeners for new functionality
+        historyButton.addEventListener('click', openHistoryModal);
+        resetButton.addEventListener('click', openResetConfirmation);
+        closeHistory.addEventListener('click', closeHistoryModal);
+        cancelReset.addEventListener('click', closeResetConfirmation);
+        confirmReset.addEventListener('click', () => {
+            clearChat();
+            closeResetConfirmation();
+        });
+
+        // Close modals when clicking outside
+        historyModal.addEventListener('click', (e) => {
+            if (e.target === historyModal) {
+                closeHistoryModal();
+            }
+        });
+
+        resetConfirmation.addEventListener('click', (e) => {
+            if (e.target === resetConfirmation) {
+                closeResetConfirmation();
+            }
+        });
+
+        // Enable debug mode with double-click on title
+        document.querySelector('.chat-header h1').addEventListener('dblclick', () => {
+            isDebugMode = !isDebugMode;
+            debugInfo.style.display = isDebugMode ? 'block' : 'none';
+            updateDebugInfo('Debug mode: ' + (isDebugMode ? 'ON' : 'OFF'));
+        });
+
+        function updateDebugInfo(message) {
+            if (isDebugMode) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugInfo.innerHTML += `<div>${timestamp}: ${message}</div>`;
+                debugInfo.scrollTop = debugInfo.scrollHeight;
+            }
+            console.log(message);
+        }
+
+        // Check connection status
+        async function checkConnection() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'healthy') {
+                    connectionStatus.textContent = 'Connected';
+                    connectionStatus.className = 'connection-status connected';
+                    updateDebugInfo('Connection: OK');
+                } else {
+                    connectionStatus.textContent = 'Issues';
+                    connectionStatus.className = 'connection-status disconnected';
+                    updateDebugInfo('Connection: Issues detected');
+                }
+            } catch (error) {
+                connectionStatus.textContent = 'Offline';
+                connectionStatus.className = 'connection-status disconnected';
+                updateDebugInfo('Connection: Failed - ' + error.message);
+            }
+        }
+
+        // Add message to UI and history
+        function addMessageToUI(content, type = 'assistant') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.textContent = content;
+            
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+            
+            // Auto-scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            updateDebugInfo(`Message added: ${type} - ${content.substring(0, 50)}...`);
+        }
+
+        // Add message to chat (wrapper function for compatibility)
+        function addMessage(content, type = 'assistant') {
+            addMessageToUI(content, type);
+            
+            // Add to history
+            currentChatHistory.push({
+                content: content,
+                type: type,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Show/hide typing indicator
+        function showTyping() {
+            typingIndicator.style.display = 'block';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            updateDebugInfo('Typing indicator: ON');
+        }
+
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+            updateDebugInfo('Typing indicator: OFF');
+        }
+
+        // Send message to backend
+        async function sendMessage(message) {
+            updateDebugInfo(`Sending message: ${message}`);
+            
+            try {
+                const requestBody = { message: message };
+                updateDebugInfo(`Request body: ${JSON.stringify(requestBody)}`);
+                
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                updateDebugInfo(`Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                updateDebugInfo(`Response data: ${JSON.stringify(data).substring(0, 100)}...`);
+                
+                return data.response;
+            } catch (error) {
+                updateDebugInfo(`Error: ${error.message}`);
+                console.error('Error:', error);
+                return 'Sorry, I encountered an error. Please try again or contact your local social services for immediate assistance. You can also call 211 for free 24/7 help with local resources.';
+            }
+        }
+
+        // Handle form submission
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleMessageSubmit();
+        });
+
+        async function handleMessageSubmit() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            updateDebugInfo(`Form submitted with message: ${message}`);
+            
+            // Add user message
+            addMessage(message, 'user');
+            
+            // Clear input and disable button
+            messageInput.value = '';
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            
+            // Show typing indicator
+            showTyping();
+            
+            // Send message and get response
+            const response = await sendMessage(message);
+            
+            // Hide typing indicator
+            hideTyping();
+            
+            // Add assistant response
+            addMessage(response, 'assistant');
+            
+            // Re-enable button
+            sendButton.disabled = false;
+            sendButton.textContent = 'Send';
+            
+            // Focus input for next message
+            messageInput.focus();
+        }
+
+        // Quick message function
+        function sendQuickMessage(message) {
+            messageInput.value = message;
+            handleMessageSubmit();
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            messageInput.focus();
+            checkConnection();
+            updateDebugInfo('Page loaded, checking connection...');
+        });
+
+        // Check connection periodically
+        setInterval(checkConnection, 30000); // Check every 30 seconds
+
+        // Handle Enter key
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Handle page beforeunload to save chat history
+        window.addEventListener('beforeunload', () => {
+            if (currentChatHistory.length > 0) {
+                saveChatHistory();
+            }
+        });
+    </script>
+</body>
+</html>
