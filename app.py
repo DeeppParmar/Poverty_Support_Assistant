@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # Configure Gemini API - Move API key to environment variable for security
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyDCRCGTPZxyzRMAoFFlk7QkkIC5pk6FTmo")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "Your_API_KEY")
 
 # Global variable to store model
 model = None
