@@ -11,7 +11,10 @@ Make sure **Python 3.8+** is installed on your system.
 
 ### 2️⃣ Install Required Packages
 
-python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+pip install fastapi uvicorn google-generativeai
 
+### 3️⃣ Run this command in cmd panel 
+
+python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 
 # Enjoy...
